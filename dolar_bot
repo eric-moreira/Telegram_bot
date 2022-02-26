@@ -1,0 +1,49 @@
+import requests
+import time
+import json
+import os
+
+
+class TelegramBot:
+    def __init__(self):
+        token = 'insert your token here'
+        self.url_base = f'https://api.telegram.org/bot{token}/'
+
+    def start(self):
+        update_id = None
+        while True:
+            update_msg = self.get_newMsg(update_id)
+            data = update_msg["result"]
+            if data:
+                for info in data:
+                    update_id = info['update_id']
+                    chat_id = info["message"]["from"]["id"]
+                    print(chat_id)
+                    answer = self.get_answer()
+                    self.response(answer, chat_id)
+                    time.sleep(10)
+            
+    # update messages
+    def get_newMsg(self, update_id):
+        request_url = f'{self.url_base}getUpdates?timeout=100'
+        if update_id:
+            request_url = f'{request_url}&offset={update_id + 1}'
+        http_response = requests.get(request_url)
+        return json.loads(http_response.content)
+
+    # get the answer (http response)
+    def get_answer(self):
+        dolar = 'http://economia.awesomeapi.com.br/json/last/USD-BRL'
+        http_response = requests.get(dolar)
+        json = http_response.json()
+        return json["USDBRL"]["ask"]
+
+    # response
+    def response(self, answer, chat_id):
+        msg = f'Valor do Dólar Atualizado: {answer}'
+        request_url = f'{self.url_base}sendMessage?chat_id={chat_id}&text={msg}'
+        requests.get(request_url)
+
+
+bot = TelegramBot()
+bot.start()
